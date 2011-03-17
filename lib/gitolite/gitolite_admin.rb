@@ -99,11 +99,8 @@ module Gitolite
         raise ArgumentError,
           "Conflicts must be resolved with either :ours or :theirs."
       end
-      # FIXME:  As far as I can tell, Grit does not provide 'pull'
-      # functionality, so calling system() for now.  It seems to be listed
-      # under the TODO section of their API.txt doc.
       Dir.chdir(@gl_admin.working_dir) do
-        system "git pull -s recursive -X#{conflicts}"
+        @gl_admin.git.pull({}, '-s', 'recursive', "-X#{conflicts}")
       end
 
       initialize(*@original_init_args)
