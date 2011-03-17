@@ -9,6 +9,7 @@ module Gitolite
     # Intialize with the path to
     # the gitolite-admin repository
     def initialize(path, options = {})
+      @original_init_args ||= [path, options]
       @gl_admin = Grit::Repo.new(path)
 
       @conf = options[:conf] || CONF
@@ -88,6 +89,24 @@ module Gitolite
     def save_and_apply
       self.save
       self.apply
+    end
+
+    # Does a pull on the gitolite-admin repo, and reinitializes so that we are
+    # in sync with it.  Conflicts are resolved by using the remote version by
+    # default (:theirs), but passing :ours will override this.
+    def reload!(conflicts = :theirs)
+      unless [:ours, :theirs].include? conflicts
+        raise ArgumentError,
+          "Conflicts must be resolved with either :ours or :theirs."
+      end
+      # FIXME:  As far as I can tell, Grit does not provide 'pull'
+      # functionality, so calling system() for now.  It seems to be listed
+      # under the TODO section of their API.txt doc.
+      Dir.chdir(@gl_admin.working_dir) do
+        system "git pull -s recursive -X#{conflicts}"
+      end
+
+      initialize(*@original_init_args)
     end
 
     def add_key(key)
